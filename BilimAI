@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>BilimAI platformasi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Unbounded:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: friendly, encouraging study companion for 5–9 graders; clear and calm
+   IDEA: a school planner (kundalik) — each subject a coloured textbook, each topic a lesson card
+   PICTURE: deep-indigo hero band with a glowing knowledge network and the "lesson of the day" card
+   COLOUR and TYPE: BilimAI indigo + pink + cyan; six subject colours; Unbounded titles, Manrope text
+   LAYOUT: top bar + grade switch; main column; AI tutor panel docked right on wide screens, a tab on phones */
+:root{color-scheme:light dark;
+--bg:light-dark(#F5F3FB,#0D0A24);--card:light-dark(#FFFFFF,#17123A);--ink:light-dark(#18132F,#F1EEFA);
+--mute:light-dark(#5E5880,#B3ACD4);--line:light-dark(#E4E0F2,#2B2458);--soft:light-dark(#EEEAF9,#1F1948);
+--brand:#2A1B6E;--pink:#E2367F;--cyan:#22C3D8;--ok:#12A26B;--bad:#D93A4A}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Manrope,system-ui,sans-serif;overflow-x:clip}
+h1,h2,h3{font-family:Unbounded,Manrope,sans-serif;line-height:1.15;margin:0;text-wrap:balance;letter-spacing:-.01em}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible,textarea:focus-visible,a:focus-visible{outline:3px solid var(--cyan);outline-offset:2px}
+.top{position:sticky;top:0;z-index:20;background:#1B1150;color:#F4F1FA;display:flex;align-items:center;gap:16px;padding:10px max(3vw,14px);flex-wrap:wrap}
+.logo{display:flex;align-items:center;gap:10px;background:none;border:0;padding:4px 0;color:#fff}
+.logo b{font-family:Unbounded,Manrope,sans-serif;font-size:20px;font-weight:800}.logo b i{font-style:normal;color:#FF5FA2}
+.grades{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:999px;padding:4px;margin-left:auto}
+.grades button{border:0;background:none;color:#D9D3F2;border-radius:999px;min-width:44px;height:38px;font-weight:700;padding:0 10px}
+.grades button[aria-pressed=true]{background:#fff;color:#1B1150}
+.grades span{align-self:center;font-size:13px;color:#B9B2D6;padding:0 6px 0 8px}
+.tbtn{border:1px solid rgba(255,255,255,.25);background:none;color:#fff;border-radius:12px;height:42px;padding:0 14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.app{display:grid;grid-template-columns:minmax(0,1fr);max-width:1440px;margin:0 auto}
+@media(min-width:1100px){.app{grid-template-columns:minmax(0,1fr) 400px}.bnav{display:none!important}.aiopen{display:none!important}}
+#view{padding:0 0 96px}
+.wrap{padding:24px max(3vw,16px)}
+.hero{background:#1B1150;color:#F4F1FA;position:relative;overflow:hidden;padding:28px max(3vw,16px) 36px}
+.hero svg.net{position:absolute;inset:0;width:100%;height:100%;opacity:.9}
+.hero-in{position:relative;display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,.9fr);gap:28px;align-items:center}
+@media(max-width:820px){.hero-in{grid-template-columns:minmax(0,1fr)}.hero svg.net{opacity:.4}}
+@media(max-width:1099px){#resBtn{display:none}}
+.hero h1{font-size:clamp(28px,4.2vw,46px);font-weight:800}
+.hero p.sub{color:#CFC8EE;font-size:17px;margin:12px 0 20px;max-width:560px}
+.search{display:flex;align-items:center;gap:10px;background:#fff;border-radius:16px;padding:6px 6px 6px 16px;max-width:560px}
+.search input{flex:1;border:0;outline:0;font:inherit;font-size:16px;color:#18132F;background:none;height:44px}
+.chips{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.chip{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:6px 14px;font-size:14px;color:#E6E1F8}
+.chip b{color:#fff}
+.lotd{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.2);border-radius:24px;padding:24px;backdrop-filter:blur(6px)}
+.lotd small{color:#8FE9F4;font-weight:700;font-size:13px}
+.lotd h3{font-size:22px;margin:8px 0 10px;color:#fff}
+.lotd p{color:#D6D0F0;margin:0 0 16px;font-size:15px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.btn{border:0;border-radius:14px;min-height:44px;padding:0 18px;font-weight:700;display:inline-flex;align-items:center;gap:8px;background:var(--pink);color:#fff}
+.btn.ghost{background:var(--soft);color:var(--ink)}
+.btn.line{background:none;border:1.5px solid var(--line);color:var(--ink)}
+.btn:disabled{opacity:.5;cursor:default}
+.sec-h{display:flex;align-items:end;justify-content:space-between;gap:12px;margin:8px 0 16px;flex-wrap:wrap}
+.sec-h h2{font-size:24px}.sec-h p{margin:0;color:var(--mute)}
+.subjects{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:16px}
+.scard{text-align:left;border:1px solid var(--line);background:var(--card);border-radius:22px;padding:20px;display:flex;flex-direction:column;gap:14px;position:relative;overflow:hidden;transition:transform .2s}
+.scard:hover{transform:translateY(-3px)}
+.scard .spine{position:absolute;left:0;top:0;bottom:0;width:8px}
+.ico{width:52px;height:52px;border-radius:16px;display:grid;place-items:center;flex:none}
+.ico svg{width:28px;height:28px}
+.scard h3{font-size:19px}.scard p{margin:0;color:var(--mute);font-size:14px}
+.bar{height:8px;border-radius:99px;background:var(--soft);overflow:hidden}.bar i{display:block;height:100%;border-radius:99px}
+.meta{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);font-weight:600}
+.shead{color:#fff;padding:28px max(3vw,16px);display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.shead .ico{background:rgba(255,255,255,.18);width:64px;height:64px}.shead .ico svg{width:34px;height:34px}
+.shead h1{font-size:clamp(26px,3.6vw,38px)}.shead p{margin:4px 0 0;opacity:.9}
+.crumb{background:none;border:0;color:inherit;opacity:.85;padding:0;font-weight:600;font-size:14px;min-height:32px}
+.topics{display:grid;gap:14px}
+.tcard{text-align:left;background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px 20px;display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:16px;align-items:center}
+.tnum{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;font-family:Unbounded,Manrope,sans-serif;font-weight:700;color:#fff}
+.tcard h3{font-size:17px;margin-bottom:4px}.tcard p{margin:0;color:var(--mute);font-size:14px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.badge{font-size:13px;font-weight:700;border-radius:999px;padding:4px 12px;white-space:nowrap;background:var(--soft);color:var(--mute)}
+.badge.done{background:color-mix(in srgb,var(--ok) 16%,transparent);color:var(--ok)}
+.badge.part{background:color-mix(in srgb,#E8A23A 20%,transparent);color:light-dark(#9A5C00,#F3C06B)}
+@media(max-width:560px){.tcard{grid-template-columns:auto minmax(0,1fr)}.tcard .badge{grid-column:2;justify-self:start}}
+.lesson{display:grid;gap:18px;max-width:880px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:22px;padding:22px}
+.panel h2{font-size:20px;margin-bottom:12px}
+.expl{font-size:18px;line-height:1.65;margin:0}
+.tools{display:flex;gap:10px;flex-wrap:wrap;margin-top:18px}
+.aiout{margin-top:16px;border-left:4px solid var(--cyan);background:var(--soft);border-radius:0 16px 16px 0;padding:14px 18px;display:none}
+.aiout.on{display:block}
+.md p{margin:0 0 8px}.md ul{margin:4px 0 8px;padding-left:20px}.md code{background:var(--soft);padding:1px 6px;border-radius:6px}
+.q{border:1px solid var(--line);border-radius:18px;padding:16px;margin-top:12px}
+.q h4{margin:0 0 12px;font-size:17px}
+.opts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media(max-width:520px){.opts{grid-template-columns:minmax(0,1fr)}}
+.opt{text-align:left;border:1.5px solid var(--line);background:var(--card);border-radius:14px;min-height:48px;padding:10px 14px;font-weight:600}
+.opt:hover:not(:disabled){border-color:var(--cyan)}
+.opt.ok{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 14%,var(--card))}
+.opt.no{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--card))}
+.opt:disabled{cursor:default}
+.why{margin:10px 0 0;font-size:14px;color:var(--mute)}
+.score{display:flex;align-items:center;gap:14px;margin-top:16px;padding:14px 16px;border-radius:16px;background:var(--soft);flex-wrap:wrap}
+.score b{font-family:Unbounded,Manrope,sans-serif;font-size:22px}
+.pager{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px}
+.stat b{display:block;font-family:Unbounded,Manrope,sans-serif;font-size:clamp(26px,3vw,34px);color:var(--pink)}
+.stat span{color:var(--mute);font-size:14px}
+.prow{display:grid;grid-template-columns:200px minmax(0,1fr) 56px;gap:14px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}
+.prow span:last-child{text-align:right;font-weight:700}
+@media(max-width:560px){.prow{grid-template-columns:minmax(0,1fr) 56px}.prow .bar{grid-column:1/-1;grid-row:2}}
+.rec{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.rec small{color:var(--mute)}
+/* AI panel */
+.ai{background:var(--card);border-left:1px solid var(--line);display:flex;flex-direction:column;height:calc(100vh - 62px);position:sticky;top:62px}
+@media(max-width:1099px){.ai{display:none;position:fixed;inset:0;top:0;height:100%;z-index:40;border:0}.ai.show{display:flex}}
+.ai-h{padding:16px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px}
+.ai-h h2{font-size:17px}.ai-h p{margin:0;font-size:13px;color:var(--mute)}
+.ai-close{margin-left:auto;border:0;background:var(--soft);border-radius:12px;width:44px;height:44px}
+@media(min-width:1100px){.ai-close{display:none}}
+.ctx{margin:12px 18px 0;padding:8px 12px;border-radius:12px;background:var(--soft);font-size:13px;color:var(--mute);display:flex;justify-content:space-between;gap:8px;align-items:center}
+.ctx button{border:0;background:none;color:var(--pink);font-weight:700;font-size:13px;min-height:32px}
+.msgs{flex:1;overflow:auto;padding:16px 18px;display:flex;flex-direction:column;gap:12px}
+.m{max-width:88%;padding:12px 14px;border-radius:18px;font-size:15px}
+.m.u{align-self:flex-end;background:var(--pink);color:#fff;border-bottom-right-radius:6px}
+.m.a{align-self:flex-start;background:var(--soft);border-bottom-left-radius:6px}
+.sugg{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px 10px}
+.sugg button{border:1.5px solid var(--line);background:none;border-radius:999px;padding:6px 12px;font-size:13px;font-weight:600;min-height:36px}
+.ai-in{display:flex;gap:8px;padding:12px 14px;border-top:1px solid var(--line);align-items:flex-end}
+.ai-in textarea{flex:1;resize:none;border:1.5px solid var(--line);border-radius:14px;padding:11px 12px;font:inherit;font-size:16px;background:var(--bg);color:var(--ink);max-height:140px}
+.ib{border:0;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:var(--soft);flex:none}
+.ib.send{background:var(--pink);color:#fff}.ib.rec{background:var(--bad);color:#fff}
+.ib svg{width:22px;height:22px}
+.note{font-size:13px;color:var(--mute);padding:0 18px 12px}
+.bnav{position:fixed;left:0;right:0;bottom:0;z-index:30;background:var(--card);border-top:1px solid var(--line);display:grid;grid-template-columns:repeat(3,1fr);padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.bnav button{border:0;background:none;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:12px;font-weight:700;color:var(--mute);min-height:52px;border-radius:12px}
+.bnav button[aria-current=true]{color:var(--pink)}
+.bnav svg{width:24px;height:24px}
+.empty{color:var(--mute);padding:20px 0}
+.foot{color:var(--mute);font-size:13px;padding:8px max(3vw,16px) 24px}
+.modal{position:fixed;inset:0;background:rgba(10,6,30,.55);display:none;place-items:center;z-index:60;padding:16px}
+.modal.on{display:grid}.modal .panel{max-width:420px}
+.dots::after{content:'';animation:dots 1.2s steps(4) infinite}
+@keyframes dots{0%{content:''}25%{content:'.'}50%{content:'..'}75%{content:'...'}}
+@media(prefers-reduced-motion:reduce){.scard{transition:none}.dots::after{animation:none;content:'...'}}
+</style>
+</head>
+<body>
+<header class="top">
+<button class="logo" id="home" aria-label="Bosh sahifa">
+<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true"><rect width="34" height="34" rx="10" fill="#E2367F"/><path d="M8 11.5c3-1.6 6-1.6 9 0v13c-3-1.6-6-1.6-9 0z" fill="#fff"/><path d="M17 11.5c3-1.6 6-1.6 9 0v13c-3-1.6-6-1.6-9 0z" fill="#FFD3E6"/><circle cx="26" cy="8" r="2.4" fill="#5FE3F2"/></svg>
+<b>Bilim<i>AI</i></b></button>
+<div class="grades" role="group" aria-label="Sinfni tanlang"><span>Sinf</span></div>
+<button class="tbtn" id="resBtn"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg><span>Natijalarim</span></button>
+</header>
+<div class="app">
+<main id="view" aria-live="polite"></main>
+<aside class="ai" id="ai" aria-label="AI yordamchi">
+<div class="ai-h"><div class="ico" style="background:#2A1B6E;width:44px;height:44px;border-radius:14px"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#5FE3F2" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><circle cx="4" cy="6" r="1.6"/><circle cx="20" cy="6" r="1.6"/><circle cx="4" cy="18" r="1.6"/><circle cx="20" cy="18" r="1.6"/><path d="M5.4 7l4.2 3.3M18.6 7l-4.2 3.3M5.4 17l4.2-3.3M18.6 17l-4.2-3.3"/></svg></div>
+<div><h2>AI yordamchi</h2><p id="aiState">Ulanmoqda…</p></div>
+<button class="ai-close" id="aiClose" aria-label="Yopish">✕</button></div>
+<div class="ctx" id="ctx"></div>
+<div class="msgs" id="msgs"></div>
+<div class="sugg" id="sugg"></div>
+<p class="note" id="aiNote" hidden></p>
+<form class="ai-in" id="aiForm">
+<button type="button" class="ib" id="mic" aria-label="Ovoz bilan so‘rash" hidden><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+<textarea id="q" rows="1" placeholder="Savolingizni yozing…" aria-label="Savol"></textarea>
+<button class="ib send" id="send" aria-label="Yuborish"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M4 12l16-8-6 16-2.5-6.5z"/></svg></button>
+</form>
+</aside>
+</div>
+<nav class="bnav" aria-label="Asosiy menyu">
+<button data-nav="home" aria-current="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 11l9-7 9 7v9a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg>Fanlar</button>
+<button data-nav="ai"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v11H9l-5 4z"/><path d="M8 10h8M8 13h5"/></svg>AI yordamchi</button>
+<button data-nav="res"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>Natijalar</button>
+</nav>
+<div class="modal" id="modal"><div class="panel"><h2>Natijalarni tozalash</h2><p>Barcha test natijalari o‘chiriladi. Davom etasizmi?</p><div class="tools"><button class="btn" id="mYes">Ha, tozalash</button><button class="btn ghost" id="mNo">Bekor qilish</button></div></div></div>
+<script>
+const SUBJ=[
+{id:'tarix',name:'Tarix',color:'#E8833A',d:'Qadimgi dunyodan Mustaqil O‘zbekistongacha'},
+{id:'math',name:'Matematika',color:'#4F6BFF',d:'Sonlar, tenglamalar, geometriya'},
+{id:'ona',name:'Ona tili',color:'#0FA88E',d:'Fonetika, so‘z turkumlari, sintaksis'},
+{id:'eng',name:'Ingliz tili',color:'#E2367F',d:'Grammar, tenses, vocabulary'},
+{id:'rus',name:'Rus tili',color:'#7C5CE6',d:'Грамматика: род, падеж, глагол'},
+{id:'it',name:'Kompyuter savodxonligi',color:'#0A9BD1',d:'Qurilmalar, internet, algoritm, Python'}
+];
+const T={
+math:{
+5:[['Natural sonlar va amallar','Natural sonlar — sanashda ishlatiladigan 1, 2, 3, … sonlar. Amallar tartibi: avval qavs ichidagi amallar, keyin ko‘paytirish va bo‘lish, so‘ng qo‘shish va ayirish. Misol: 2 + 3 · 4 = 2 + 12 = 14.',[['8 + 2 · 5 = ?',['50','18','20','15'],1],['Eng kichik natural son qaysi?',['0','1','2','−1'],1]]],
+['Oddiy kasrlar','Kasr butunning qismini bildiradi: a/b da b (maxraj) — butun nechta teng qismga bo‘linganini, a (surat) — nechta qism olinganini ko‘rsatadi. Maxrajlari teng kasrlarni qo‘shishda suratlar qo‘shiladi: 2/7 + 3/7 = 5/7.',[['1/5 + 2/5 = ?',['3/10','3/5','2/5','1/5'],1],['3/4 kasrning maxraji nechaga teng?',['3','4','7','12'],1]]],
+['O‘nli kasrlar','O‘nli kasr — maxraji 10, 100, 1000 bo‘lgan kasrning qisqa yozuvi: 3/10 = 0,3; 25/100 = 0,25. Qo‘shish va ayirishda vergullar bir-birining ostiga yoziladi.',[['0,5 qaysi oddiy kasrga teng?',['1/5','1/2','5/100','2/5'],1],['1,2 + 0,35 = ?',['1,55','1,37','4,7','1,25'],0]]]],
+6:[['Bo‘linish belgilari, EKUB va EKUK','Son 2 ga bo‘linadi, agar oxirgi raqami juft bo‘lsa; 3 ga — raqamlari yig‘indisi 3 ga bo‘linsa; 5 ga — oxirgi raqami 0 yoki 5 bo‘lsa. EKUB — eng katta umumiy bo‘luvchi, EKUK — eng kichik umumiy karrali. Masalan, EKUB(12; 18) = 6, EKUK(4; 6) = 12.',[['Qaysi son 3 ga bo‘linadi?',['124','215','342','101'],2],['EKUK(3; 4) = ?',['7','12','1','24'],1]]],
+['Nisbat va proporsiya','Nisbat — ikki sonning bo‘linmasi (a : b). Proporsiya — ikki nisbatning tengligi: a : b = c : d. Asosiy xossasi: chetki hadlar ko‘paytmasi o‘rta hadlar ko‘paytmasiga teng (a · d = b · c).',[['2 : x = 4 : 10 bo‘lsa, x = ?',['5','8','20','2'],0],['6 : 3 nisbatning qiymati?',['3','2','18','0,5'],1]]],
+['Musbat va manfiy sonlar','Noldan katta sonlar musbat, kichiklari manfiy. Sonning moduli — uning noldan masofasi: |−7| = 7. Ishoralari har xil sonlarni qo‘shishda modullar ayiriladi va moduli kattaroq sonning ishorasi qo‘yiladi: −8 + 5 = −3.',[['−6 + 10 = ?',['−16','4','−4','16'],1],['|−12| = ?',['−12','12','0','1/12'],1]]]],
+7:[['Birhad va ko‘phadlar','Birhad — sonlar va o‘zgaruvchilar ko‘paytmasi, masalan 3a²b. Ko‘phad — birhadlar yig‘indisi. O‘xshash hadlar (harfiy qismi bir xil) koeffitsiyentlarni qo‘shish orqali ixchamlanadi: 5x + 2x = 7x.',[['4a + 3b − a = ?',['6ab','3a + 3b','4a + 2b','7ab'],1],['2x · 3x = ?',['5x','6x','6x²','5x²'],2]]],
+['Qisqa ko‘paytirish formulalari','(a + b)² = a² + 2ab + b²; (a − b)² = a² − 2ab + b²; a² − b² = (a − b)(a + b). Bu formulalar hisoblashni tezlashtiradi: 51² = (50 + 1)² = 2500 + 100 + 1 = 2601.',[['(x + 3)² = ?',['x² + 9','x² + 3x + 9','x² + 6x + 9','x² + 6x + 6'],2],['49² − 1 qaysi ko‘paytmaga teng?',['48 · 50','49 · 48','50 · 50','48 · 48'],0]]],
+['Uchburchak burchaklari','Har qanday uchburchak ichki burchaklarining yig‘indisi 180° ga teng. Teng yonli uchburchakda asosdagi burchaklar teng, teng tomonli uchburchakda har bir burchak 60°.',[['Uchburchakning ikki burchagi 50° va 70°. Uchinchisi?',['50°','60°','70°','80°'],1],['Teng tomonli uchburchakning bir burchagi?',['45°','60°','90°','30°'],1]]]],
+8:[['Kvadrat ildiz','a sonining arifmetik kvadrat ildizi — kvadrati a ga teng bo‘lgan manfiy bo‘lmagan son: √49 = 7, chunki 7² = 49. Manfiy sondan haqiqiy kvadrat ildiz chiqarilmaydi. Xossa: √(a · b) = √a · √b.',[['√81 = ?',['8','9','−9','40,5'],1],['√(4 · 25) = ?',['10','29','100','20'],0]]],
+['Kvadrat tenglamalar','ax² + bx + c = 0 (a ≠ 0) ko‘rinishidagi tenglama. Diskriminant D = b² − 4ac. D > 0 bo‘lsa ikki ildiz, D = 0 bo‘lsa bitta ildiz, D < 0 bo‘lsa haqiqiy ildiz yo‘q. Ildizlar: x = (−b ± √D) / 2a.',[['x² − 5x + 6 = 0 tenglamaning ildizlari?',['1 va 6','2 va 3','−2 va −3','−1 va 6'],1],['x² + 4x + 4 = 0 uchun D = ?',['0','32','16','8'],0]]],
+['Pifagor teoremasi','To‘g‘ri burchakli uchburchakda gipotenuza kvadrati katetlar kvadratlari yig‘indisiga teng: c² = a² + b². Masalan, katetlar 3 va 4 bo‘lsa, gipotenuza 5 ga teng.',[['Katetlari 6 va 8 bo‘lgan uchburchakning gipotenuzasi?',['10','14','12','48'],0],['Gipotenuza 13, bir katet 5. Ikkinchi katet?',['8','12','18','10'],1]]]],
+9:[['Kvadrat funksiya','y = ax² + bx + c funksiyaning grafigi — parabola. a > 0 bo‘lsa shoxlari yuqoriga, a < 0 bo‘lsa pastga qaragan. Parabola uchining abssissasi: x₀ = −b / 2a.',[['y = −2x² + 3 parabola shoxlari qayerga qaragan?',['Yuqoriga','Pastga','O‘ngga','Chapga'],1],['y = x² − 4x + 1 parabola uchining abssissasi?',['−2','2','4','1'],1]]],
+['Arifmetik progressiya','Har bir hadi oldingisiga bir xil d sonni qo‘shish bilan hosil bo‘ladigan ketma-ketlik. n-hadi: aₙ = a₁ + (n − 1)d. Masalan, 2, 5, 8, 11, … uchun d = 3.',[['3, 7, 11, … progressiyaning ayirmasi d = ?',['3','4','7','10'],1],['a₁ = 2, d = 3 bo‘lsa, a₁₀ = ?',['29','32','30','27'],0]]],
+['Trigonometriya asoslari','To‘g‘ri burchakli uchburchakda o‘tkir burchak sinusi — qarshisidagi katetning gipotenuzaga nisbati, kosinusi — yopishgan katetning gipotenuzaga nisbati. Muhim qiymatlar: sin 30° = 1/2, cos 60° = 1/2, sin²α + cos²α = 1.',[['sin 30° = ?',['1','1/2','√3/2','0'],1],['sin²α + cos²α = ?',['0','2','1','sin 2α'],2]]]]
+},
+tarix:{
+5:[['Ibtidoiy jamiyat','Insoniyat tarixining eng uzoq davri. Odamlar dastlab termachilik va ovchilik bilan yashagan, toshdan qurollar yasagan. Olovdan foydalanish, keyinchalik dehqonchilik va chorvachilikka o‘tish katta burilish bo‘lgan. O‘zbekiston hududida Teshiktosh g‘ori kabi qadimiy makonlar topilgan.',[['Ibtidoiy odamlar qurollarini asosan nimadan yasagan?',['Temirdan','Toshdan','Bronzadan','Plastmassadan'],1],['Teshiktosh g‘ori qaysi davr bilan bog‘liq?',['Ibtidoiy davr','O‘rta asrlar','XX asr','Temuriylar davri'],0]]],
+['Qadimgi Misr','Nil daryosi bo‘yida vujudga kelgan qadimgi davlat. Hukmdorlari fir’avnlar deb atalgan. Misrliklar piramidalar qurgan, iyeroglif yozuvini va papirusni yaratgan.',[['Qadimgi Misr qaysi daryo bo‘yida joylashgan?',['Furot','Nil','Amudaryo','Dajla'],1],['Misr hukmdorlari qanday atalgan?',['Xon','Fir’avn','Imperator','Shoh'],1]]],
+['Qadimgi Yunoniston','Qadimgi Yunonistonda shahar-davlatlar (polislar) bo‘lgan, eng mashhurlari — Afina va Sparta. Afinada demokratiya shakllangan. Olimpiya o‘yinlari ham qadimgi yunonlardan meros.',[['Demokratiya qaysi polisda shakllangan?',['Sparta','Afina','Rim','Bobil'],1],['Olimpiya o‘yinlari qaysi xalqdan meros?',['Misrliklar','Yunonlar','Xitoyliklar','Rimliklar'],1]]]],
+6:[['Avesto va zardushtiylik','“Avesto” — zardushtiylik dinining muqaddas kitobi, O‘rta Osiyo xalqlarining eng qadimgi yozma yodgorliklaridan biri. Unda ezgu fikr, ezgu so‘z va ezgu amal g‘oyalari ulug‘lanadi.',[['“Avesto” qaysi dinning muqaddas kitobi?',['Buddaviylik','Zardushtiylik','Xristianlik','Islom'],1],['Zardushtiylikning asosiy g‘oyasi?',['Ezgu fikr, ezgu so‘z, ezgu amal','Faqat urush','Savdo-sotiq','Dengiz sayohati'],0]]],
+['Baqtriya, So‘g‘d va Xorazm','Miloddan avvalgi I ming yillikda O‘zbekiston hududida Baqtriya, So‘g‘diyona va Xorazm kabi qadimgi davlat birlashmalari bo‘lgan. Bu yerlarda sug‘orma dehqonchilik, hunarmandchilik va shaharlar rivojlangan. Samarqand (qadimgi nomi Marokanda) — dunyodagi eng qadimgi shaharlardan biri.',[['Samarqandning qadimgi nomi?',['Marokanda','Memfis','Bobil','Karfagen'],0],['Qadimgi Xorazm qaysi daryoning quyi oqimida joylashgan?',['Amudaryo','Nil','Volga','Dunay'],0]]],
+['Buyuk Ipak yo‘li','Miloddan avvalgi II asrdan Xitoyni O‘rta yer dengizi bo‘yi bilan bog‘lagan savdo yo‘li. U orqali ipak, ziravorlar, qog‘oz va g‘oyalar tarqalgan. Samarqand, Buxoro va Xiva yo‘lning muhim markazlari bo‘lgan.',[['Buyuk Ipak yo‘li qaysi mamlakatdan boshlangan?',['Hindiston','Xitoy','Misr','Eron'],1],['Quyidagilardan qaysi biri Ipak yo‘lidagi shahar?',['Buxoro','London','Parij','Oslo'],0]]]],
+7:[['Somoniylar davlati','IX–X asrlarda Movarounnahr va Xurosonda hukm surgan davlat, poytaxti Buxoro. Bu davrda ilm-fan, adabiyot va me’morchilik gullab-yashnagan. Buxorodagi Ismoil Somoniy maqbarasi — o‘sha davrning noyob yodgorligi.',[['Somoniylar davlatining poytaxti?',['Samarqand','Buxoro','Xiva','Toshkent'],1],['Somoniylar qaysi asrlarda hukm surgan?',['IX–X','XIV–XV','XVIII–XIX','I–II'],0]]],
+['Amir Temur va uning davlati','Amir Temur (1336–1405) 1370-yilda Movarounnahrda hokimiyatni qo‘lga olib, poytaxti Samarqand bo‘lgan qudratli davlat barpo etdi. “Kuch — adolatdadir” shiori u bilan bog‘lanadi. “Temur tuzuklari” davlat boshqaruvi haqidagi muhim manba hisoblanadi.',[['Amir Temur davlatining poytaxti?',['Buxoro','Samarqand','Shahrisabz','Hirot'],1],['Amir Temur qaysi yilda hokimiyatga kelgan?',['1370','1220','1501','1991'],0]]],
+['Buyuk allomalar','Muhammad al-Xorazmiy algebra faniga asos solgan, “algoritm” so‘zi uning nomidan kelib chiqqan. Abu Ali ibn Sino “Tib qonunlari” asarini yozgan. Abu Rayhon Beruniy astronomiya, geografiya va tarix bo‘yicha ko‘plab asarlar yaratgan.',[['“Algoritm” so‘zi qaysi olim nomidan kelib chiqqan?',['Ibn Sino','Al-Xorazmiy','Beruniy','Ulug‘bek'],1],['“Tib qonunlari” asarining muallifi?',['Ibn Sino','Al-Farg‘oniy','Navoiy','Bobur'],0]]]],
+8:[['Ulug‘bek va Temuriylar madaniyati','Amir Temurning nabirasi Mirzo Ulug‘bek Samarqandda rasadxona qurdirib, mingdan ortiq yulduzning jadvalini tuzgan. Temuriylar davrida Alisher Navoiy ijod qilgan, me’morchilik va miniatyura san’ati yuksalgan.',[['Ulug‘bek rasadxonasi qaysi shaharda?',['Buxoro','Samarqand','Xiva','Qo‘qon'],1],['Alisher Navoiy qaysi davrda ijod qilgan?',['Temuriylar','Somoniylar','Qadimgi Misr','XX asr'],0]]],
+['Shayboniylar davlati','XVI asr boshida Muhammad Shayboniyxon Movarounnahrni egallab, Shayboniylar davlatiga asos soldi. Keyinchalik poytaxt Buxoroga ko‘chirildi. Abdullaxon II davrida davlat kuchaygan, karvonsaroy va ko‘priklar qurilgan.',[['Shayboniylar davlatiga kim asos solgan?',['Amir Temur','Muhammad Shayboniyxon','Bobur','Ismoil Somoniy'],1],['Shayboniylar qaysi asrda hokimiyatga kelgan?',['XVI','IX','XX','III'],0]]],
+['Uch xonlik davri','XVIII asrga kelib hududimizda uch davlat — Buxoro amirligi, Xiva va Qo‘qon xonliklari mavjud edi. Ularning o‘zaro kurashlari mamlakatni zaiflashtirdi. Shunga qaramay, Xivadagi Ichan qal’a kabi go‘zal me’moriy obidalar barpo etildi.',[['Ichan qal’a qaysi shaharda joylashgan?',['Xiva','Qo‘qon','Toshkent','Termiz'],0],['Quyidagilardan qaysi biri uch davlatdan biri emas?',['Buxoro amirligi','Xiva xonligi','Qo‘qon xonligi','Somoniylar davlati'],3]]]],
+9:[['Turkistonning bosib olinishi','XIX asrning ikkinchi yarmida Rossiya imperiyasi O‘rta Osiyoni bosib oldi. 1865-yilda Toshkent egallandi, 1867-yilda Turkiston general-gubernatorligi tashkil etildi. Mahalliy xalq mustamlaka zulmiga qarshi qo‘zg‘olonlar ko‘targan.',[['Turkiston general-gubernatorligi qachon tuzilgan?',['1867','1991','1370','1924'],0],['Toshkent qaysi yili egallangan?',['1865','1500','1941','1220'],0]]],
+['Jadidchilik harakati','XIX asr oxiri — XX asr boshlarida jadidlar xalqni ma’rifatli qilish uchun yangi usul maktablari ochgan, gazeta va teatrlar tashkil etgan. Mahmudxo‘ja Behbudiy, Abdurauf Fitrat, Abdulla Avloniy, Munavvarqori Abdurashidxonov — taniqli jadidlar.',[['Jadidlar qanday maktablar ochgan?',['Yangi usul maktablari','Harbiy maktablar','Sport maktablari','Musiqa maktablari'],0],['Quyidagilardan kim jadid ma’rifatparvari?',['Mahmudxo‘ja Behbudiy','Amir Temur','Ismoil Somoniy','Shayboniyxon'],0]]],
+['O‘zbekiston mustaqilligi','1991-yil 31-avgustda O‘zbekistonning davlat mustaqilligi e’lon qilindi, 1-sentabr Mustaqillik kuni sifatida nishonlanadi. 1992-yil 8-dekabrda Konstitutsiya qabul qilingan. 2023-yilda referendum orqali yangilangan Konstitutsiya qabul qilindi.',[['Mustaqillik kuni qachon nishonlanadi?',['1-sentabr','8-dekabr','21-mart','9-may'],0],['Birinchi Konstitutsiya qachon qabul qilingan?',['1992-yil 8-dekabr','1991-yil 1-sentabr','2000-yil','1867-yil'],0]]]]
+},
+ona:{
+5:[['Unli va undosh tovushlar','O‘zbek tilida 6 ta unli tovush bor: a, o, u, o‘, i, e. Unlilar talaffuzida havo og‘izda to‘siqqa uchramaydi. Qolgan tovushlar undoshlar: b, d, k, s, sh, ch, ng va boshqalar.',[['O‘zbek tilida nechta unli tovush bor?',['5','6','10','29'],1],['Qaysi harf unli tovushni bildiradi?',['b','o‘','sh','q'],1]]],
+['Sinonim, antonim, omonim','Sinonimlar — ma’nosi yaqin so‘zlar (chiroyli — go‘zal). Antonimlar — qarama-qarshi ma’noli so‘zlar (katta — kichik). Omonimlar — shakli bir xil, ma’nosi boshqa-boshqa so‘zlar (ot — hayvon, ot — ism).',[['“Issiq” so‘zining antonimi?',['Iliq','Sovuq','Qaynoq','Yoz'],1],['“Do‘st — o‘rtoq” qanday so‘zlar?',['Antonim','Sinonim','Omonim','Paronim'],1]]],
+['So‘z tarkibi: o‘zak va qo‘shimcha','O‘zak — so‘zning asosiy ma’nosini bildiruvchi, boshqa qismlarga bo‘linmaydigan qismi. Qo‘shimchalar o‘zakka qo‘shilib, yangi so‘z yasaydi yoki so‘zlarni bog‘laydi. Masalan: paxta-kor-lar-imiz.',[['“Kitobxonlar” so‘zining o‘zagi?',['kitob','xon','lar','kitobxon'],0],['“Ishchi” so‘zidagi “-chi” qanday qo‘shimcha?',['So‘z yasovchi','Ko‘plik','Kelishik','Egalik'],0]]]],
+6:[['Ot','Ot — shaxs, narsa yoki voqea nomini bildiruvchi so‘z turkumi, kim? nima? qayer? so‘roqlariga javob beradi. Otlar atoqli (Toshkent, Malika) va turdosh (shahar, qiz) bo‘ladi. Atoqli otlar bosh harf bilan yoziladi.',[['Qaysi so‘z atoqli ot?',['daryo','Amudaryo','kitob','maktab'],1],['Ot qaysi so‘roqqa javob beradi?',['Qanday?','Nima?','Qancha?','Nima qildi?'],1]]],
+['Sifat va uning darajalari','Sifat predmetning belgisini bildiradi va qanday? qanaqa? so‘roqlariga javob beradi. Sifat darajalari: oddiy (baland), qiyosiy (balandroq), orttirma (eng baland, juda baland).',[['“Shirinroq” sifatning qaysi darajasida?',['Oddiy','Qiyosiy','Orttirma','Hech qaysi'],1],['Sifat qaysi so‘roqqa javob beradi?',['Kim?','Qanday?','Nima qildi?','Qachon?'],1]]],
+['Son','Son predmetning miqdori yoki tartibini bildiradi: nechta? qancha? nechanchi? Miqdor son: besh, o‘n. Tartib son -(i)nchi qo‘shimchasi bilan yasaladi: beshinchi, o‘ninchi.',[['Qaysi so‘z tartib son?',['yetti','yettinchi','yettita','yettov'],1],['Tartib son qaysi qo‘shimcha bilan yasaladi?',['-ta','-(i)nchi','-lab','-roq'],1]]]],
+7:[['Fe’l va uning zamonlari','Fe’l harakat yoki holatni bildiradi: nima qildi? nima qilyapti? nima qiladi? Fe’l uch zamonda keladi: o‘tgan (o‘qidi), hozirgi (o‘qiyapti), kelasi (o‘qiydi).',[['“Yozyapti” qaysi zamonda?',['O‘tgan','Hozirgi','Kelasi','Hech qaysi'],1],['Qaysi so‘z fe’l?',['chiroyli','yugurdi','daraxt','tez'],1]]],
+['Ravish','Ravish harakatning belgisini bildiradi: qanday? qachon? qayerda? qancha? Masalan: tez yurdi, ertaga keladi, oldinga qaradi. Ravish asosan fe’lga bog‘lanadi.',[['“U sekin gapirdi” gapida ravish qaysi?',['U','sekin','gapirdi','Hammasi'],1],['Ravish asosan qaysi so‘z turkumiga bog‘lanadi?',['Otga','Fe’lga','Songa','Olmoshga'],1]]],
+['Yordamchi so‘zlar','Ko‘makchilar (uchun, bilan, kabi), bog‘lovchilar (va, lekin, ammo, yoki) va yuklamalar (-mi, faqat, hatto) mustaqil ma’noga ega emas. Ular so‘z va gaplarni bog‘lash yoki qo‘shimcha ma’no berish uchun xizmat qiladi.',[['“Lekin” qaysi yordamchi so‘z turiga kiradi?',['Ko‘makchi','Bog‘lovchi','Yuklama','Undov'],1],['“Vatan uchun” birikmasidagi “uchun” — …',['Ko‘makchi','Bog‘lovchi','Fe’l','Sifat'],0]]]],
+8:[['So‘z birikmasi','So‘z birikmasi — kamida ikki mustaqil so‘zning ma’no va grammatik jihatdan bog‘lanishi. Unda hokim va tobe so‘z bo‘ladi: “qizil olma” birikmasida “olma” — hokim, “qizil” — tobe so‘z.',[['“Yangi kitob” birikmasida hokim so‘z?',['yangi','kitob','ikkalasi','hech biri'],1],['Qaysi biri so‘z birikmasi?',['va','maktab hovlisi','-lar','juda'],1]]],
+['Ega va kesim','Ega — gapda kim? nima? so‘rog‘iga javob beruvchi bosh bo‘lak. Kesim — eganing harakati yoki belgisini bildiradi: nima qildi? qanday? Masalan: “Quyosh chiqdi” — quyosh (ega), chiqdi (kesim).',[['“Bolalar o‘ynashyapti” gapida ega?',['Bolalar','o‘ynashyapti','ikkalasi','yo‘q'],0],['Kesim nimani bildiradi?',['Eganing harakati yoki belgisini','Faqat joyni','Faqat vaqtni','Undovni'],0]]],
+['Ikkinchi darajali bo‘laklar','To‘ldiruvchi (kimni? nimaga?), aniqlovchi (qanday? kimning?) va hol (qachon? qayerda? qanday?) — gapning ikkinchi darajali bo‘laklari. “Aziz kecha qiziqarli kitob o‘qidi” gapida: kecha — hol, qiziqarli — aniqlovchi, kitob — to‘ldiruvchi.',[['Hol qaysi so‘roqqa javob beradi?',['Kimni?','Qachon?','Kimning?','Kim?'],1],['“Chiroyli gul” birikmasida “chiroyli” qaysi bo‘lak?',['Aniqlovchi','To‘ldiruvchi','Hol','Ega'],0]]]],
+9:[['Bog‘langan qo‘shma gap','Ikki yoki undan ortiq sodda gap teng huquqli bo‘lib, bog‘lovchilar (va, ammo, lekin, yoki) yoki ohang orqali bog‘lanadi. Masalan: “Yomg‘ir to‘xtadi, quyosh chiqdi.”',[['Bog‘langan qo‘shma gapni toping:',['Men kitob o‘qidim.','Qor yog‘di, lekin havo iliq edi.','Agar kelsang, boramiz.','Ukam maktabga bordi.'],1],['Bog‘langan qo‘shma gap qismlari qanday munosabatda?',['Teng','Biri hokim, biri tobe','Faqat so‘roq','Bog‘lanmagan'],0]]],
+['Ergashgan qo‘shma gap','Bir gap (ergash gap) ikkinchisiga (bosh gapga) tobe bo‘ladi. Ular -sa, -ki, chunki, agar kabi vositalar bilan bog‘lanadi: “Agar harakat qilsang, maqsadingga erishasan.”',[['“Agar … -sa” vositasi qaysi gapda ishlatiladi?',['Ergashgan qo‘shma gap','Sodda gap','Bog‘langan qo‘shma gap','Undov gap'],0],['Ergashgan qo‘shma gapda tobe qism nima deyiladi?',['Bosh gap','Ergash gap','Kesim','Undalma'],1]]],
+['Nutq uslublari','O‘zbek tilida beshta asosiy uslub bor: so‘zlashuv, ilmiy, rasmiy, publitsistik va badiiy. Masalan, ariza rasmiy uslubda, she’r badiiy uslubda, gazeta maqolasi publitsistik uslubda yoziladi.',[['Ariza qaysi uslubda yoziladi?',['Badiiy','Rasmiy','So‘zlashuv','Publitsistik'],1],['Gazeta maqolasi odatda qaysi uslubda?',['Publitsistik','Ilmiy','Badiiy','So‘zlashuv'],0]]]]
+},
+eng:{
+5:[['To be: am / is / are','“To be” fe’li hozirgi zamonda uch shaklda: I am; he / she / it is; we / you / they are. Misol: I am a pupil. She is my sister. They are friends.',[['My brother ___ 12 years old.',['am','is','are','be'],1],['We ___ in the 5th grade.',['is','am','are','be'],2]]],
+['Plural nouns','Ko‘plik odatda -s qo‘shib yasaladi: book → books. s, sh, ch, x bilan tugasa -es: box → boxes. Ba’zi so‘zlar alohida shaklga ega: child → children, man → men, foot → feet.',[['Plural of “box”?',['boxs','boxes','boxies','box'],1],['Plural of “child”?',['childs','childes','children','childen'],2]]],
+['Have got / has got','Egalikni bildiradi: I / you / we / they have got; he / she / it has got. Misol: I have got a cat. She has got two brothers. Inkor: haven’t got / hasn’t got.',[['She ___ a new bike.',['have got','has got','is got','are got'],1],['They ___ a big house.',['has got','have got','is','am'],1]]]],
+6:[['Present Simple','Odatiy, takrorlanadigan ishlar uchun. He / she / it bilan fe’lga -s qo‘shiladi: She plays tennis every day. So‘roq va inkorda do / does: Does he like music? I don’t like milk.',[['He ___ to school every day.',['go','goes','going','gone'],1],['___ you like pizza?',['Does','Do','Is','Are'],1]]],
+['Present Continuous','Ayni paytda bo‘layotgan ish: am / is / are + fe’l-ing. Misol: I am reading now. They are playing football. Signal so‘zlar: now, at the moment, Look!',[['Look! The children ___ in the park.',['play','plays','are playing','played'],2],['She ___ a book now.',['reads','is reading','read','are reading'],1]]],
+['Can / can’t','Qobiliyat yoki imkoniyatni bildiradi, barcha shaxslar bilan bir xil: I can swim. He can’t drive. Can you speak English? — Yes, I can.',[['Fish ___ swim.',['can','cans','can to','is can'],0],['Correct question?',['Can she sing?','Does she can sing?','She can sing?','Cans she sing?'],0]]]],
+7:[['Past Simple','O‘tgan zamonda tugagan ish. To‘g‘ri fe’llarga -ed qo‘shiladi (play → played), noto‘g‘ri fe’llar alohida yodlanadi (go → went, see → saw). So‘roq va inkorda did: Did you watch it? I didn’t go.',[['Past form of “go”?',['goed','went','gone','goes'],1],['Yesterday I ___ football.',['play','played','playing','plays'],1]]],
+['Comparatives and superlatives','Qisqa sifatlar: tall → taller → the tallest. Uzun sifatlar: beautiful → more beautiful → the most beautiful. Istisnolar: good → better → the best; bad → worse → the worst.',[['An elephant is ___ than a dog.',['big','bigger','biggest','more big'],1],['This is ___ day of my life!',['the best','the goodest','better','best'],0]]],
+['There is / there are, some / any','Biror narsa mavjudligini bildiradi: There is a pen on the desk. There are some apples. So‘roq va inkorda odatda any: Are there any eggs? There aren’t any chairs.',[['There ___ three cats in the garden.',['is','are','be','am'],1],['Is there ___ milk in the fridge?',['some','any','a','many'],1]]]],
+8:[['Present Perfect','have / has + fe’lning 3-shakli (V3). O‘tmishda bo‘lib, natijasi hozir muhim bo‘lgan ish: I have finished my homework. She has never been to London. Signal so‘zlar: already, yet, ever, never, just.',[['I ___ already ___ my lunch.',['have / eaten','has / eaten','have / ate','am / eating'],0],['She ___ never been to Paris.',['have','has','is','did'],1]]],
+['Future: will va be going to','Will — to‘satdan qaror va bashorat: I think it will rain. Be going to — oldindan rejalashtirilgan ish: I am going to visit my grandma tomorrow.',[['Reja: We ___ travel to Samarkand next week.',['are going to','will be','goes','went'],0],['I think she ___ win.',['will','is','going','did'],0]]],
+['Modal verbs: must, should','Must — majburiyat: You must wear a seatbelt. Mustn’t — qat’iy taqiq. Should — maslahat: You should drink more water. Modal fe’ldan keyin fe’l “to”siz keladi.',[['You ___ eat so much sugar. It’s bad for you.',['should','shouldn’t','must to','can to'],1],['Students ___ be quiet in the library.',['must','musts','must to','musted'],0]]]],
+9:[['Passive voice','Ishni kim bajargani emas, ishning o‘zi muhim bo‘lganda: be + V3. Present: English is spoken in many countries. Past: The book was written in 1990.',[['This house ___ in 1950.',['built','was built','is build','was build'],1],['Football ___ all over the world.',['is played','plays','is playing','played'],0]]],
+['Conditionals: 1st va 2nd','First conditional — real shart: If it rains, I will stay at home. Second conditional — xayoliy shart: If I had a million dollars, I would travel the world.',[['If I ___ time, I will help you.',['have','had','will have','would have'],0],['If I were a bird, I ___ fly.',['will','would','am','can to'],1]]],
+['Reported speech','Birovning gapini o‘zlashtirib aytish. Zamon bir pog‘ona orqaga suriladi: “I am tired,” he said. → He said (that) he was tired. Olmoshlar ham o‘zgaradi: my → his / her.',[['“I like tea,” she said. → She said she ___ tea.',['like','liked','likes','is liking'],1],['“I can swim,” Tom said. → Tom said he ___ swim.',['can','could','cans','will'],1]]]]
+},
+rus:{
+5:[['Алфавит и звуки','Rus alifbosida 33 ta harf bor: 10 ta unli harf (а, о, у, ы, э, я, ё, ю, и, е), 21 ta undosh harf hamda ь va ъ belgilari. Ь (мягкий знак) undoshni yumshatadi: мат — мать.',[['Rus alifbosida nechta harf bor?',['26','33','29','31'],1],['Qaysi harf unli?',['б','ю','ш','к'],1]]],
+['Род существительных','Rus tilida otlar uch rodda bo‘ladi: мужской (он — стол, дом), женский (она — книга, мама) va средний (оно — окно, море). Odatda -а/-я bilan tugaganlar женский, -о/-е bilan tugaganlar средний rodda.',[['“Книга” qaysi rodda?',['Мужской','Женский','Средний','Rodi yo‘q'],1],['“Окно” qaysi rodda?',['Мужской','Женский','Средний','Ko‘plik'],2]]],
+['Множественное число','Ko‘plikda otlar odatda -ы/-и qo‘shimchasini oladi: стол → столы, книга → книги; средний rodda -а/-я: окно → окна. Istisnolar: человек → люди, ребёнок → дети.',[['“Стол” so‘zining ko‘pligi?',['столы','столи','стола','столов'],0],['“Ребёнок” so‘zining ko‘pligi?',['ребёнки','дети','ребёноки','ребёнка'],1]]]],
+6:[['Прилагательное','Sifat otga rod, son va kelishikda moslashadi: новый дом, новая книга, новое окно, новые дома. So‘rog‘i: какой? какая? какое? какие?',[['___ машина (yangi)',['новый','новая','новое','новые'],1],['Sifat so‘rog‘i qaysi?',['Кто?','Какой?','Что делать?','Где?'],1]]],
+['Настоящее время глагола','Hozirgi zamonda fe’l shaxs va songa qarab tuslanadi. Читать: я читаю, ты читаешь, он читает, мы читаем, вы читаете, они читают.',[['Он ___ (читать) книгу.',['читаю','читает','читаем','читают'],1],['Мы ___ (играть) в футбол.',['играем','играет','играю','играешь'],0]]],
+['Падежи','Rus tilida 6 ta kelishik (падеж) bor: именительный, родительный, дательный, винительный, творительный, предложный. Masalan: Я живу в Ташкенте — предложный падеж.',[['Rus tilida nechta kelishik bor?',['4','6','8','3'],1],['“Я думаю о маме” — “о маме” qaysi kelishikda?',['Именительный','Предложный','Дательный','Родительный'],1]]]],
+7:[['Прошедшее время','O‘tgan zamon fe’li shaxsga emas, rod va songa qarab o‘zgaradi: он читал, она читала, оно читало, они читали.',[['Она ___ (писать) письмо.',['писал','писала','писало','писали'],1],['Они ___ (гулять) в парке.',['гулял','гуляла','гуляли','гуляло'],2]]],
+['Местоимения','Kishilik olmoshlari: я, ты, он, она, оно, мы, вы, они. Egalik olmoshlari: мой, твой, наш, ваш, его, её, их. “Вы” hurmat shaklida ham ishlatiladi.',[['“Bizning” rus tilida…',['мой','наш','ваш','их'],1],['Kattalarga hurmat bilan murojaat:',['ты','вы','он','они'],1]]],
+['Числительные','Miqdor sonlar: один, два, три… (сколько?). Tartib sonlar: первый, второй, третий… (который?). Tartib sonlar sifat kabi rodda moslashadi: первый урок, первая парта.',[['Tartib sonni toping:',['пять','пятый','пятеро','пятьдесят'],1],['___ класс (beshinchi)',['пятый','пятая','пятое','пять'],0]]]],
+8:[['Глаголы движения','Bir yo‘nalishdagi, ayni paytdagi harakat: идти (Я иду в школу). Takroriy yoki har tomonlama harakat: ходить (Я хожу в школу каждый день). Transportda: ехать / ездить.',[['Сейчас я ___ в магазин.',['хожу','иду','ходил','езжу'],1],['Каждый день он ___ в школу.',['идёт','ходит','едет','пойдёт'],1]]],
+['Степени сравнения','Qiyosiy daraja: -ее qo‘shimchasi yoki более: быстрый → быстрее (более быстрый). Orttirma daraja: самый быстрый. Istisnolar: хороший → лучше, плохой → хуже.',[['“Хороший” sifatining qiyosiy darajasi?',['хорошее','лучше','хорошейший','хорошо'],1],['Эверест — ___ высокая гора.',['самая','более','очень','самый'],0]]],
+['Вид глагола','Несовершенный вид — jarayon yoki takroriy harakat (что делать? — писать). Совершенный вид — tugallangan, natijali harakat (что сделать? — написать). Я писал письмо час. Я написал письмо.',[['Совершенный вид fe’lini toping:',['читать','прочитать','читал','читаю'],1],['Natijani bildiradi:',['Я делал уроки','Я сделал уроки','Я делаю уроки','Я буду делать уроки'],1]]]],
+9:[['Причастие','Sifatdosh — fe’l belgilarini saqlagan va какой? so‘rog‘iga javob beruvchi shakl: читающий мальчик (o‘qiyotgan bola), прочитанная книга (o‘qilgan kitob). Sifat kabi rod, son va kelishikda moslashadi.',[['Причастие qaysi?',['читая','читающий','читать','чтение'],1],['Причастие qaysi so‘roqqa javob beradi?',['Какой?','Что делая?','Где?','Сколько?'],0]]],
+['Деепричастие','Ravishdosh — qo‘shimcha harakatni bildiradi va что делая? что сделав? so‘roqlariga javob beradi: Читая книгу, он улыбался. Сделав уроки, она пошла гулять.',[['Деепричастие qaysi?',['читающий','читая','читать','читал'],1],['Деепричастие qaysi so‘roqqa javob beradi?',['Что делая?','Какой?','Кто?','Сколько?'],0]]],
+['Сложное предложение','Qo‘shma gap ikki yoki undan ortiq sodda gapdan tuziladi va и, а, но (сложносочинённое) yoki что, потому что, когда, который (сложноподчинённое) orqali bog‘lanadi: Я знаю, что ты придёшь.',[['Сложноподчинённое предложение:',['Солнце светит, и птицы поют.','Я не пришёл, потому что болел.','Я читаю книгу.','Шёл дождь, но было тепло.'],1],['“Но” qanday bog‘lovchi?',['Сочинительный','Подчинительный','Bu fe’l','Bu ot'],0]]]]
+},
+it:{
+5:[['Kompyuter qurilmalari','Kompyuter kiritish qurilmalari (klaviatura, sichqoncha, mikrofon, skaner), chiqarish qurilmalari (monitor, printer, karnay) va tizim blokidan iborat. Protsessor — kompyuterning “miyasi”, u barcha hisob-kitoblarni bajaradi.',[['Qaysi biri chiqarish qurilmasi?',['Klaviatura','Sichqoncha','Printer','Skaner'],2],['Kompyuterning “miyasi” deb nimaga aytiladi?',['Monitor','Protsessor','Karnay','Klaviatura'],1]]],
+['Fayl va papka','Fayl — kompyuterda nomlangan ma’lumot (matn, rasm, musiqa). Fayl nomi va kengaytmadan iborat: dars.docx, rasm.png. Papka (jild) fayllarni tartib bilan saqlash uchun xizmat qiladi.',[['“referat.docx” faylida kengaytma qaysi?',['referat','docx','referat.docx','.'],1],['Fayllarni tartibli saqlash uchun nima ishlatiladi?',['Papka','Printer','Karnay','Ekran'],0]]],
+['Klaviatura bilan ishlash','Shift — bosh harf yozish, Enter — yangi qatorga o‘tish, Backspace — chapdagi belgini o‘chirish, Space (probel) — so‘zlar orasini ochish. Ctrl + C — nusxalash, Ctrl + V — qo‘yish.',[['Nusxalash uchun qaysi tugmalar birikmasi?',['Ctrl + V','Ctrl + C','Ctrl + Z','Alt + F4'],1],['Yangi qatorga o‘tish tugmasi?',['Enter','Shift','Esc','Tab'],0]]]],
+6:[['Matn muharriri','Matn muharrirlari (masalan, MS Word, Google Docs) matn yozish, tahrirlash va bezash uchun ishlatiladi. Shrift turi, o‘lchami, rangi, qalin (B), kursiv (I) va tagiga chizilgan (U) formatlari bor.',[['Matnni qalin qilish belgisi?',['I','U','B','S'],2],['Qaysi biri matn muharriri?',['MS Word','Paint','Kalkulyator','Media Player'],0]]],
+['Internetda xavfsizlik','Kuchli parol kamida 8 ta belgidan iborat bo‘lib, katta-kichik harflar, raqam va belgilarni o‘z ichiga oladi. Parolni hech kimga aytmang, notanish havolalarni ochmang va shaxsiy ma’lumotlaringizni begonalarga bermang.',[['Qaysi parol eng kuchli?',['123456','qwerty','Bilim#2026x','ismim'],2],['Notanish odam xabarda havola yubordi. Nima qilish kerak?',['Darhol ochish','Ochmasdan, kattalarga aytish','Parolni yuborish','Do‘stlarga tarqatish'],1]]],
+['Elektron pochta','Elektron pochta (e-mail) — internet orqali xat yuborish xizmati. Manzil ko‘rinishi: ism@domen.uz — “@” belgisi albatta bo‘ladi. Xatga fayllarni ilova qilish mumkin.',[['E-mail manzilida albatta qaysi belgi bo‘ladi?',['#','@','&','%'],1],['To‘g‘ri e-mail manzil:',['ali.gmail.com','ali@gmail.com','ali@','@gmail'],1]]]],
+7:[['Axborot o‘lchov birliklari','Eng kichik birlik — bit (0 yoki 1). 1 bayt = 8 bit, 1 KB = 1024 bayt, 1 MB = 1024 KB, 1 GB = 1024 MB.',[['1 bayt necha bit?',['4','8','10','1024'],1],['1 KB necha bayt?',['1000','1024','100','8'],1]]],
+['Ikkilik sanoq sistemasi','Kompyuter ma’lumotni faqat 0 va 1 raqamlari yordamida saqlaydi. Ikkilikdagi 101 soni = 1·4 + 0·2 + 1·1 = 5. O‘nlikdagi 6 ikkilikda 110 ko‘rinishida yoziladi.',[['Ikkilikdagi 11 o‘nlikda nechaga teng?',['11','3','2','1'],1],['O‘nlikdagi 4 ikkilikda…',['100','11','4','010'],0]]],
+['Elektron jadvallar','Elektron jadvallar (MS Excel, Google Sheets) hisob-kitob uchun ishlatiladi. Jadval katakchalardan iborat: A1, B2. Formula “=” belgisi bilan boshlanadi: =A1+B1, =SUM(A1:A5).',[['Excelda formula qaysi belgi bilan boshlanadi?',['+','=','#','@'],1],['A1 dan A5 gacha yig‘indini hisoblovchi formula?',['=SUM(A1:A5)','SUM A1-A5','=A1:A5','=ADD(A1,A5)'],0]]]],
+8:[['Algoritm va uning turlari','Algoritm — maqsadga olib boruvchi aniq ketma-ket buyruqlar. Turlari: chiziqli (buyruqlar ketma-ket), tarmoqlanuvchi (shartga qarab tanlov) va takrorlanuvchi (sikl). Masalan, choy damlash — chiziqli algoritm.',[['Shartga qarab yo‘l tanlanadigan algoritm?',['Chiziqli','Tarmoqlanuvchi','Takrorlanuvchi','Tasodifiy'],1],['“Algoritm” so‘zi qaysi olim nomi bilan bog‘liq?',['Al-Xorazmiy','Nyuton','Ibn Sino','Edison'],0]]],
+['Blok-sxemalar','Algoritmni grafik ko‘rinishda tasvirlash usuli. Oval — boshlanish va tugash, to‘g‘ri to‘rtburchak — amal, romb — shartni tekshirish, parallelogramm — ma’lumot kiritish yoki chiqarish.',[['Blok-sxemada shart qaysi shakl bilan belgilanadi?',['Oval','Romb','To‘rtburchak','Doira'],1],['Boshlanish va tugash belgisi?',['Oval','Romb','Uchburchak','Parallelogramm'],0]]],
+['Taqdimotlar yaratish','Taqdimot dasturlari (PowerPoint, Google Slides) slaydlar yaratish uchun ishlatiladi. Yaxshi slaydda kam matn, aniq sarlavha va mos rasm bo‘ladi. Slaydlar orasiga o‘tish effektlarini qo‘shish mumkin.',[['Qaysi dastur taqdimot yaratish uchun?',['PowerPoint','Excel','Notepad','Paint'],0],['Yaxshi slayd qanday bo‘ladi?',['Juda ko‘p matnli','Kam matn, aniq sarlavha','Sarlavhasiz','Faqat mayda shrift'],1]]]],
+9:[['Python: dasturlash asoslari','Python — o‘rganish oson dasturlash tili. print() ekranga chiqaradi: print("Salom!"). O‘zgaruvchi qiymat saqlaydi: yosh = 15. input() foydalanuvchidan ma’lumot oladi.',[['Python’da ekranga chiqarish funksiyasi?',['input()','print()','show()','write()'],1],['x = 5 dan keyin print(x + 2) nima chiqaradi?',['x + 2','52','7','5'],2]]],
+['Shartli operator if','if sharti to‘g‘ri bo‘lsa, ichidagi buyruqlar bajariladi, aks holda else qismi ishlaydi: if ball >= 60: print("O‘tdi") else: print("Qayta topshiring"). Python’da ichki qism bo‘sh joy (otstup) bilan yoziladi.',[['if 10 > 5: print("Ha") nima chiqaradi?',['Ha','Yo‘q','Xato','Hech narsa'],0],['Shart bajarilmaganda qaysi qism ishlaydi?',['if','else','print','for'],1]]],
+['Sun’iy intellekt nima?','Sun’iy intellekt (SI) — kompyuterlarning o‘rganish, tushunish va qaror qabul qilish qobiliyati. U ko‘plab ma’lumotlardan namunalarni o‘rganadi. SI ovozli yordamchilar, tarjimonlar va BilimAI kabi ta’lim platformalarida ishlatiladi. SI javoblarini doim tekshirib, mustaqil fikrlash muhim.',[['SI nimadan o‘rganadi?',['Ko‘plab ma’lumotlardan','Faqat elektrdan','Hech narsadan','Faqat rasmlardan'],0],['SI javobiga qanday munosabatda bo‘lish kerak?',['Ko‘r-ko‘rona ishonish','Tekshirib, mustaqil fikrlash','E’tibor bermaslik','Faqat nusxalash'],1]]]]
+}
+};
+
+</script>
+<script>
+{
+const $=s=>document.querySelector(s);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const ICON={
+tarix:'<path d="M3 21h18M5 21V10M9.5 21V10M14.5 21V10M19 21V10M2 10l10-6 10 6z"/>',
+math:'<path d="M4 7h6M7 4v6M14 7h6M5 14l4 4M9 14l-4 4M14 15h6M14 18.5h6"/>',
+ona:'<path d="M3.5 5.5c3-1.6 5.8-1.6 8.5 0v14c-2.7-1.6-5.5-1.6-8.5 0zM12 5.5c2.7-1.6 5.5-1.6 8.5 0v14c-3-1.6-5.8-1.6-8.5 0z"/>',
+eng:'<path d="M3.5 4.5h17v11.5H10l-5 4v-4H3.5z"/><text x="12" y="13" font-size="7" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Manrope,sans-serif">EN</text>',
+rus:'<path d="M3.5 4.5h17v11.5H10l-5 4v-4H3.5z"/><text x="12" y="13" font-size="7" font-weight="800" text-anchor="middle" fill="currentColor" stroke="none" font-family="Manrope,sans-serif">РУ</text>',
+it:'<rect x="3.5" y="4.5" width="17" height="11.5" rx="1.5"/><path d="M1.5 19.5h21M10 8.5l-2.2 1.9 2.2 1.9M14 8.5l2.2 1.9-2.2 1.9"/>'};
+const ico=(id,col)=>`<svg viewBox="0 0 24 24" fill="none" stroke="${col||'currentColor'}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${ICON[id]}</svg>`;
+const sub=id=>SUBJ.find(s=>s.id===id);
+const KEY='bilimai-v1';
+let store={grade:7,p:{}};
+try{const r=JSON.parse(localStorage.getItem(KEY)||'null');if(r&&r.p)store=r}catch(e){}
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(store))}catch(e){}};
+const S={view:'home',subj:null,ti:0,q:''};
+const pk=(s,g,i)=>`${s}-${g}-${i}`;
+const rec=(s,g,i)=>store.p[pk(s,g,i)];
+function subjProg(s,g){const L=T[s][g];let done=0,sc=0,tt=0;L.forEach((_,i)=>{const r=rec(s,g,i);if(r){done++;sc+=r.s;tt+=r.t}});return{done,n:L.length,pct:tt?Math.round(sc/tt*100):0}}
+
+/* grade switch */
+const gw=$('.grades');
+[5,6,7,8,9].forEach(g=>{const b=document.createElement('button');b.textContent=g;b.dataset.g=g;b.setAttribute('aria-label',g+'-sinf');b.onclick=()=>{store.grade=g;save();syncGrades();render()};gw.appendChild(b)});
+function syncGrades(){gw.querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.g===store.grade))}
+
+/* hero network */
+function net(){let x=7;const r=()=>(x=(x*16807)%2147483647)/2147483647;const P=[];for(let i=0;i<46;i++)P.push([520+r()*480,r()*400]);let l='',c='';const col=['#FF5FA2','#5FE3F2','#A88BFF'];
+P.forEach((a,i)=>P.forEach((b,j)=>{if(j>i){const d=Math.hypot(a[0]-b[0],a[1]-b[1]);if(d<95)l+=`<line x1="${a[0]|0}" y1="${a[1]|0}" x2="${b[0]|0}" y2="${b[1]|0}" stroke="${col[(i+j)%3]}" stroke-opacity="${(.5*(1-d/95)).toFixed(2)}"/>`}}));
+P.forEach((a,i)=>{const rr=[1.6,2.2,3][i%3];c+=`<circle cx="${a[0]|0}" cy="${a[1]|0}" r="${rr*3}" fill="${col[i%3]}" fill-opacity=".12"/><circle cx="${a[0]|0}" cy="${a[1]|0}" r="${rr}" fill="${col[i%3]}"/>`});
+return `<svg class="net" viewBox="0 0 1000 400" preserveAspectRatio="xMaxYMid slice" aria-hidden="true"><defs><radialGradient id="g1"><stop offset="0" stop-color="#7B5CFF" stop-opacity=".55"/><stop offset="1" stop-color="#7B5CFF" stop-opacity="0"/></radialGradient><radialGradient id="g2"><stop offset="0" stop-color="#E2367F" stop-opacity=".45"/><stop offset="1" stop-color="#E2367F" stop-opacity="0"/></radialGradient></defs><circle cx="820" cy="120" r="300" fill="url(#g1)"/><circle cx="940" cy="380" r="220" fill="url(#g2)"/>${l}${c}</svg>`}
+
+function topicCard(s,g,i,showSub){const t=T[s][g][i],r=rec(s,g,i),c=sub(s).color;
+const b=r?(r.s===r.t?`<span class="badge done">✓ ${r.s}/${r.t}</span>`:`<span class="badge part">${r.s}/${r.t}</span>`):'<span class="badge">Yangi</span>';
+return `<button class="tcard" data-open="${s}|${g}|${i}"><span class="tnum" style="background:${c}">${showSub?ico(s,'#fff').replace('<svg','<svg width="24" height="24"'):i+1}</span><span><h3>${esc(t[0])}</h3><p>${showSub?esc(sub(s).name)+' · '+g+'-sinf — ':''}${esc(t[1])}</p></span>${b}</button>`}
+
+function home(){const g=store.grade;
+const all=SUBJ.flatMap(s=>T[s.id][g].map((t,i)=>[s.id,i]));
+const day=Math.floor(Date.now()/864e5);const [ls,li]=all[day%all.length];const lt=T[ls][g][li];
+const done=Object.keys(store.p).length;
+let body;
+if(S.q.trim()){const q=S.q.trim().toLowerCase();const res=[];SUBJ.forEach(s=>[5,6,7,8,9].forEach(gr=>T[s.id][gr].forEach((t,i)=>{if((t[0]+' '+t[1]).toLowerCase().includes(q))res.push(topicCard(s.id,gr,i,true))})));
+body=`<div class="sec-h"><h2>Qidiruv natijalari</h2><p>${res.length} ta mavzu topildi</p></div><div class="topics">${res.join('')||'<p class="empty">Hech narsa topilmadi. Boshqa so‘z bilan qidirib ko‘ring yoki AI yordamchidan so‘rang.</p>'}</div>`}
+else body=`<div class="sec-h"><h2>${g}-sinf fanlari</h2><p>Fanni tanlang va mavzularni o‘rganing</p></div><div class="subjects">${SUBJ.map(s=>{const p=subjProg(s.id,g);return `<button class="scard" data-subj="${s.id}"><span class="spine" style="background:${s.color}"></span><span style="display:flex;gap:14px;align-items:center"><span class="ico" style="background:color-mix(in srgb,${s.color} 15%,transparent);color:${s.color}">${ico(s.id)}</span><span><h3>${s.name}</h3><p>${esc(s.d)}</p></span></span><span class="bar"><i style="width:${p.done/p.n*100}%;background:${s.color}"></i></span><span class="meta"><span>${p.done}/${p.n} mavzu</span><span>${p.done?p.pct+'%':'Boshlanmagan'}</span></span></button>`}).join('')}</div>`;
+return `<section class="hero">${net()}<div class="hero-in"><div><h1>Salom! Bugun nimani o‘rganamiz?</h1><p class="sub">BilimAI — 5–9-sinflar uchun sun’iy intellekt asosidagi ta’lim yordamchisi. Mavzuni o‘qing, AI’dan so‘rang va test bilan o‘zingizni sinang.</p>
+<label class="search"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#5E5880" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg><input id="srch" type="search" placeholder="Mavzu qidiring: kasr, Amir Temur, Present Simple…" value="${esc(S.q)}" aria-label="Mavzu qidirish"></label>
+<div class="chips"><span class="chip"><b>6</b> fan</span><span class="chip"><b>5–9</b> sinflar</span><span class="chip"><b>90</b> mavzu</span><span class="chip"><b>${done}</b> test topshirildi</span></div></div>
+<div class="lotd"><small>Kun mavzusi · ${esc(sub(ls).name)}, ${g}-sinf</small><h3>${esc(lt[0])}</h3><p>${esc(lt[1])}</p><button class="btn" data-open="${ls}|${g}|${li}">O‘rganishni boshlash →</button></div></div></section>
+<div class="wrap">${body}</div><p class="foot">Mavzular 5–9-sinf o‘quv dasturidagi asosiy bo‘limlar asosida qisqa tarzda tayyorlangan.</p>`}
+
+function subject(){const s=sub(S.subj),g=store.grade,p=subjProg(s.id,g);
+return `<section class="shead" style="background:${s.color}"><span class="ico" style="color:#fff">${ico(s.id)}</span><div style="flex:1"><button class="crumb" data-go="home">← Barcha fanlar</button><h1>${s.name}</h1><p>${g}-sinf · ${p.done}/${p.n} mavzu o‘rganildi${p.done?' · o‘rtacha natija '+p.pct+'%':''}</p></div></section>
+<div class="wrap"><div class="topics">${T[s.id][g].map((_,i)=>topicCard(s.id,g,i)).join('')}</div>
+<div class="panel" style="margin-top:18px"><h2>Boshqa mavzu kerakmi?</h2><p style="margin:0 0 14px;color:var(--mute)">AI yordamchi ${s.name.toLowerCase()} fanidan istalgan ${g}-sinf mavzusini tushuntirib beradi.</p><button class="btn ghost" data-ask="${esc(s.name)} fanidan ${g}-sinfda yana qanday muhim mavzular bor? Qisqa ro‘yxat ber.">AI’dan so‘rash</button></div></div>`}
+
+let quiz=null;
+function quizHTML(qs,id,showWhy){return qs.map((q,k)=>`<div class="q" data-q="${k}"><h4>${k+1}. ${esc(q[0])}</h4><div class="opts">${q[1].map((o,j)=>`<button class="opt" data-quiz="${id}" data-k="${k}" data-j="${j}">${esc(o)}</button>`).join('')}</div>${showWhy&&q[3]?`<p class="why" hidden>${esc(q[3])}</p>`:''}</div>`).join('')}
+function topic(){const s=sub(S.subj),g=store.grade,i=S.ti,t=T[s.id][g][i],r=rec(s.id,g,i),n=T[s.id][g].length;
+quiz={main:{qs:t[2],ans:{}},ai:null};
+return `<section class="shead" style="background:${s.color}"><span class="ico" style="color:#fff">${ico(s.id)}</span><div style="flex:1"><button class="crumb" data-subj="${s.id}">← ${s.name}, ${g}-sinf</button><h1>${esc(t[0])}</h1><p>${i+1}-mavzu / ${n}${r?' · eng yaxshi natija: '+r.s+'/'+r.t:''}</p></div></section>
+<div class="wrap"><div class="lesson">
+<div class="panel"><h2>Qisqacha mazmun</h2><p class="expl">${esc(t[1])}</p>
+<div class="tools"><button class="btn ghost aibtn" data-tool="simple">Soddaroq tushuntir</button><button class="btn ghost aibtn" data-tool="example">Yana misol keltir</button><button class="btn ghost aibtn" data-ask="__topic">AI’dan savol so‘rash</button><button class="btn line" id="speak" hidden>Tinglash</button></div>
+<div class="aiout md" id="aiout"></div></div>
+<div class="panel"><h2>Bilimingizni tekshiring</h2><div id="qMain">${quizHTML(t[2],'main')}</div><div id="sMain"></div></div>
+<div class="panel" id="aiQuizP"><h2>AI bilan yangi test</h2><p style="margin:0 0 12px;color:var(--mute)">Sun’iy intellekt shu mavzu bo‘yicha har safar yangi 5 ta savol tuzib beradi.</p><button class="btn aibtn" id="genQ">5 ta savol yaratish</button><div id="qAI"></div><div id="sAI"></div></div>
+<div class="pager">${i>0?`<button class="btn line" data-open="${s.id}|${g}|${i-1}">← Oldingi mavzu</button>`:'<span></span>'}${i<n-1?`<button class="btn line" data-open="${s.id}|${g}|${i+1}">Keyingi mavzu →</button>`:`<button class="btn line" data-subj="${s.id}">Barcha mavzular</button>`}</div>
+</div></div>`}
+
+function results(){const g=store.grade;const recs=Object.entries(store.p);const tot=recs.reduce((a,[,r])=>a+r.t,0),ok=recs.reduce((a,[,r])=>a+r.s,0);
+const perfect=recs.filter(([,r])=>r.s===r.t).length;
+const weak=[],fresh=[];SUBJ.forEach(s=>T[s.id][g].forEach((t,i)=>{const r=rec(s.id,g,i);if(r&&r.s<r.t)weak.push([s.id,i,r]);else if(!r)fresh.push([s.id,i])}));
+return `<section class="shead" style="background:#1B1150"><div style="flex:1"><button class="crumb" data-go="home">← Bosh sahifa</button><h1>Natijalarim</h1><p>${g}-sinf bo‘yicha o‘sish va shaxsiy tavsiyalar</p></div></section>
+<div class="wrap" style="display:grid;gap:18px;max-width:980px">
+<div class="stats"><div class="stat"><b>${recs.length}</b><span>topshirilgan test (barcha sinflar)</span></div><div class="stat"><b>${tot?Math.round(ok/tot*100):0}%</b><span>to‘g‘ri javoblar ulushi</span></div><div class="stat"><b>${perfect}</b><span>mukammal o‘zlashtirilgan mavzu</span></div><div class="stat"><b>${weak.length}</b><span>takrorlash kerak (${g}-sinf)</span></div></div>
+<div class="panel"><h2>${g}-sinf: fanlar bo‘yicha</h2>${SUBJ.map(s=>{const p=subjProg(s.id,g);return `<div class="prow"><span style="font-weight:700">${s.name}</span><span class="bar"><i style="width:${p.done/p.n*100}%;background:${s.color}"></i></span><span>${p.done}/${p.n}</span></div>`}).join('')}</div>
+<div class="panel"><h2>Shaxsiy tavsiyalar</h2>
+${weak.length?weak.map(([s,i,r])=>`<div class="rec"><span><b>${esc(T[s][g][i][0])}</b><br><small>${sub(s).name} · natija ${r.s}/${r.t} — takrorlash tavsiya etiladi</small></span><button class="btn ghost" data-open="${s}|${g}|${i}">Takrorlash</button></div>`).join(''):''}
+${fresh.slice(0,3).map(([s,i])=>`<div class="rec"><span><b>${esc(T[s][g][i][0])}</b><br><small>${sub(s).name} · hali boshlanmagan</small></span><button class="btn ghost" data-open="${s}|${g}|${i}">Boshlash</button></div>`).join('')}
+${!weak.length&&!fresh.length?'<p class="empty">Ajoyib! Bu sinfning barcha mavzulari mukammal o‘zlashtirildi.</p>':''}
+<div class="tools"><button class="btn aibtn" id="plan">AI’dan haftalik o‘quv reja olish</button><button class="btn line" id="reset">Natijalarni tozalash</button></div><div class="aiout md" id="aiout"></div></div></div>`}
+
+function render(){syncGrades();const v=S.view;$('#view').innerHTML=v==='home'?home():v==='subject'?subject():v==='topic'?topic():results();
+document.querySelectorAll('.bnav button').forEach(b=>b.setAttribute('aria-current',b.dataset.nav==='res'?v==='results':b.dataset.nav==='home'?v!=='results':false));
+if(v==='topic'&&tts){const b=$('#speak');if(b)b.hidden=false}
+aiAvail();setCtx()}
+function go(v,o={}){Object.assign(S,{view:v},o);render();window.scrollTo(0,0)}
+
+/* quiz */
+function answer(id,k,j,btn){const Q=id==='main'?quiz.main:quiz.ai;if(!Q||Q.ans[k]!==undefined)return;Q.ans[k]=j;const q=Q.qs[k],box=btn.closest('.q');
+box.querySelectorAll('.opt').forEach((b,x)=>{b.disabled=true;if(x===q[2])b.classList.add('ok');else if(x===j)b.classList.add('no')});
+const w=box.querySelector('.why');if(w)w.hidden=false;
+if(Object.keys(Q.ans).length===Q.qs.length){const sc=Q.qs.filter((q,x)=>Q.ans[x]===q[2]).length,tt=Q.qs.length;
+const msg=sc===tt?'Zo‘r! Hammasi to‘g‘ri.':sc>=tt/2?'Yaxshi natija! Xatolarni ko‘rib chiqing.':'Mavzuni yana bir bor o‘qib chiqing — keyingi safar albatta uddalaysiz.';
+const el=id==='main'?$('#sMain'):$('#sAI');
+el.innerHTML=`<div class="score"><b>${sc}/${tt}</b><span>${msg}</span><button class="btn ghost" data-retry="${id}">Qayta ishlash</button></div>`;
+if(id==='main'){const key=pk(S.subj,store.grade,S.ti),old=store.p[key];if(!old||sc>=old.s)store.p[key]={s:sc,t:tt};save()}}}
+
+/* AI */
+let sample=null,dict=null,tts=null,aiChecked=false,busy=false;const hist=[];
+const aiState=$('#aiState'),msgs=$('#msgs');
+function ctxText(){const g=store.grade;if(S.view==='topic'){const s=sub(S.subj);return `${s.name} · ${g}-sinf · ${T[s.id][g][S.ti][0]}`}if(S.view==='subject')return `${sub(S.subj).name} · ${g}-sinf`;return `${g}-sinf · barcha fanlar`}
+function setCtx(){$('#ctx').innerHTML=`<span>Mavzu: <b>${esc(ctxText())}</b></span>`;
+const sg=S.view==='topic'?['Shu mavzuni tushuntir','Menga 3 ta mashq ber','Bu bilim hayotda qayerda kerak?']:S.view==='subject'?['Bu fanni qanday yaxshi o‘rganaman?','Eng muhim 3 mavzu qaysi?']:['Kasrlarni qanday qo‘shaman?','Present Simple nima?','Amir Temur haqida qisqacha'];
+$('#sugg').innerHTML=sample?sg.map(x=>`<button type="button" data-s="${esc(x)}">${esc(x)}</button>`).join(''):''}
+function SYS(){const g=store.grade;const s=S.subj?sub(S.subj):null;
+return `Sen BilimAI — O‘zbekistondagi ${g}-sinf o‘quvchisi uchun mehribon va sabrli ta’lim yordamchisisan. Joriy kontekst: ${ctxText()}.${S.view==='topic'?' Darslikdagi izoh: '+T[S.subj][g][S.ti][1]:''}
+Qoidalar: faqat o‘zbek tilida (lotin yozuvida) javob ber${s&&(s.id==='eng'||s.id==='rus')?'; misollarni '+(s.id==='eng'?'ingliz':'rus')+' tilida keltirib, o‘zbekcha izohla':''}. ${g}-sinf darajasiga mos, sodda so‘zlar bilan, qisqa yoz: 3–7 gap yoki qisqa ro‘yxat, kamida bitta misol. Uy vazifasini tayyor yechib berma — bosqichma-bosqich yo‘l ko‘rsat va o‘quvchining o‘zi o‘ylashiga yordam ber. Tarixiy sana va faktlarda aniq bo‘l; ishonching komil bo‘lmasa, shuni ayt. Ta’limga aloqasi yo‘q yoki yoshga mos bo‘lmagan savollarga muloyimlik bilan rad javobini berib, darsga qaytar. Formatlash: oddiy matn, qalin so‘z uchun **so‘z**, ro‘yxat uchun "- ".`}
+function md(t){let h=esc(t).replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/`([^`]+)`/g,'<code>$1</code>');
+const L=h.split('\n');let out='',inl=false;L.forEach(l=>{const m=l.match(/^\s*[-•*]\s+(.*)/);if(m){if(!inl){out+='<ul>';inl=true}out+=`<li>${m[1]}</li>`}else{if(inl){out+='</ul>';inl=false}if(l.trim())out+=`<p>${l}</p>`}});if(inl)out+='</ul>';return out}
+function aiErr(e){if(e&&e.code==='not_granted'){sample=null;aiAvail();return 'AI yordamchiga ruxsat berilmadi.'}if(e&&e.code==='rate_limited')return 'Hozir so‘rovlar ko‘p. Bir daqiqadan keyin qayta urinib ko‘ring.';return 'Kechirasiz, javob olishda xatolik yuz berdi. Qayta urinib ko‘ring.'}
+function aiAvail(){const on=!!sample;
+document.querySelectorAll('.aibtn,[data-ask]').forEach(b=>{b.disabled=!on;b.title=on?'':'AI yordamchi Claude ichida ochilganda ishlaydi'});
+$('#q').disabled=!on;$('#send').disabled=!on;
+aiState.textContent=on?'Tayyor · savol bering':aiChecked?'Hozir mavjud emas':'Ulanmoqda…';
+const n=$('#aiNote');n.hidden=on||!aiChecked;n.textContent='AI yordamchi bu sahifa Claude ichida ochilganda ishlaydi. Mavzular va testlar esa doim ochiq.'}
+function bubble(role,html){const d=document.createElement('div');d.className='m '+(role==='user'?'u':'a')+(role==='user'?'':' md');d.innerHTML=html;msgs.appendChild(d);msgs.scrollTop=msgs.scrollHeight;return d}
+async function chat(text){text=text.trim();if(!text||busy||!sample)return;busy=true;$('#q').value='';
+bubble('user',esc(text));const d=bubble('a','<span class="dots">O‘ylayapman</span>');
+hist.push({role:'user',content:text});const h=hist.slice(-10);if(h[0].role!=='user')h.shift();
+const msgsIn=h.map((m,x)=>x===0?{role:'user',content:SYS()+'\n\nO‘quvchi savoli: '+m.content}:m);
+try{const r=await sample(msgsIn,{cache:false,onText:({text})=>{d.innerHTML=md(text);msgs.scrollTop=msgs.scrollHeight}});d.innerHTML=md(r.text);hist.push({role:'assistant',content:r.text})}
+catch(e){d.innerHTML=esc(aiErr(e));hist.pop()}busy=false}
+async function oneShot(prompt,box){if(!sample||busy)return;busy=true;box.classList.add('on');box.innerHTML='<span class="dots">AI tayyorlamoqda</span>';
+try{const r=await sample(SYS()+'\n\n'+prompt,{onText:({text})=>{box.innerHTML=md(text)}});box.innerHTML=md(r.text)}catch(e){box.innerHTML=esc(aiErr(e))}busy=false}
+async function genQuiz(){if(!sample||busy)return;const g=store.grade,t=T[S.subj][g][S.ti],btn=$('#genQ');busy=true;btn.disabled=true;$('#qAI').innerHTML='<p class="dots">Savollar tuzilmoqda</p>';$('#sAI').innerHTML='';
+const p=`${sub(S.subj).name}, ${g}-sinf, mavzu: "${t[0]}". Izoh: ${t[1]}
+Shu mavzu bo‘yicha ${g}-sinf darajasida 5 ta yangi test savoli tuz. Savollar o‘zbek tilida${S.subj==='eng'?' (gap misollari ingliz tilida)':S.subj==='rus'?' (misollar rus tilida)':''}, har birida 4 ta variant va faqat bitta to‘g‘ri javob. Faqat JSON qaytar: {"questions":[{"q":"savol","options":["A","B","C","D"],"answer":0,"explain":"nega to‘g‘ri — bir gap"}]} — answer to‘g‘ri variant indeksi (0–3).`;
+try{let v;try{v=await sample.json(p)}catch(e){if(e&&e.code)throw e;const r=await sample(p);v=JSON.parse(r.text.slice(r.text.indexOf('{'),r.text.lastIndexOf('}')+1))}
+const qs=(v.questions||[]).filter(q=>q&&q.q&&Array.isArray(q.options)&&q.options.length===4&&q.answer>=0&&q.answer<4).slice(0,5).map(q=>[q.q,q.options.map(String),q.answer|0,q.explain||'']);
+if(!qs.length)throw{};quiz.ai={qs,ans:{}};$('#qAI').innerHTML=quizHTML(qs,'ai',true)}
+catch(e){$('#qAI').innerHTML=`<p class="why">${esc(e&&e.code?aiErr(e):'Savollarni tuzib bo‘lmadi. Qayta urinib ko‘ring.')}</p>`}
+btn.disabled=false;btn.textContent='Yana 5 ta savol';busy=false}
+function openAI(){$('#ai').classList.add('show');setTimeout(()=>$('#q').focus(),50)}
+
+if(window.claude&&claude.use){
+claude.use('sample').then(x=>{sample=x;aiChecked=true;aiAvail();setCtx();if(x&&!msgs.children.length)bubble('a',md('Salom! Men **BilimAI** yordamchisiman. Istalgan mavzu bo‘yicha savol bering — sodda qilib tushuntirib beraman.'))}).catch(()=>{aiChecked=true;aiAvail()});
+claude.use('dictation').then(d=>{dict=d;if(!d)return;const m=$('#mic');m.hidden=false;let base='';
+d.onPartial(({text})=>{$('#q').value=base+text});d.onFinal(({text})=>{base+=text+' ';$('#q').value=base});
+d.onState(({state})=>{m.classList.toggle('rec',state==='listening');m.setAttribute('aria-label',state==='listening'?'To‘xtatish':'Ovoz bilan so‘rash');if(state==='idle'){base=''}});
+m.onclick=()=>{if(m.classList.contains('rec')){d.stop().catch(()=>{});return}base=$('#q').value?$('#q').value+' ':'';d.start().catch(e=>{if(e&&e.code==='not_granted')m.hidden=true})}}).catch(()=>{});
+claude.use('tts').then(t=>{tts=t;if(!t)return;const b=$('#speak');if(b)b.hidden=false;t.onState(({state})=>{const b=$('#speak');if(b)b.textContent=state==='speaking'?'To‘xtatish':'Tinglash'})}).catch(()=>{});
+}else{aiChecked=true}
+
+/* events */
+document.addEventListener('click',e=>{const t=e.target.closest('button');if(!t)return;
+if(t.dataset.subj){go('subject',{subj:t.dataset.subj});return}
+if(t.dataset.open){const [s,g,i]=t.dataset.open.split('|');store.grade=+g;save();go('topic',{subj:s,ti:+i});return}
+if(t.dataset.go){go(t.dataset.go);return}
+if(t.dataset.quiz){answer(t.dataset.quiz,+t.dataset.k,+t.dataset.j,t);return}
+if(t.dataset.retry){const id=t.dataset.retry;const Q=id==='main'?quiz.main:quiz.ai;Q.ans={};$(id==='main'?'#qMain':'#qAI').innerHTML=quizHTML(Q.qs,id,id==='ai');$(id==='main'?'#sMain':'#sAI').innerHTML='';return}
+if(t.dataset.tool){const g=store.grade,tp=T[S.subj][g][S.ti];oneShot(t.dataset.tool==='simple'?`Mavzu: "${tp[0]}". Shu mavzuni ${g}-sinf o‘quvchisiga yanada soddaroq, hayotiy o‘xshatish bilan 4–6 gapda tushuntir.`:`Mavzu: "${tp[0]}". Shu mavzu bo‘yicha 2 ta yangi misol keltir va har birini qadamma-qadam qisqa tushuntir.`,$('#aiout'));return}
+if(t.dataset.ask){const a=t.dataset.ask;openAI();if(a!=='__topic')chat(a);return}
+if(t.dataset.s){chat(t.dataset.s);return}
+if(t.dataset.nav){const n=t.dataset.nav;if(n==='ai')openAI();else{$('#ai').classList.remove('show');go(n==='res'?'results':'home')}return}
+if(t.id==='genQ')genQuiz();
+if(t.id==='speak'&&tts){if(t.textContent==='To‘xtatish'){tts.stop()}else tts.speak(T[S.subj][store.grade][S.ti][1]).catch(()=>{})}
+if(t.id==='plan'){const g=store.grade;const sum=SUBJ.map(s=>{const p=subjProg(s.id,g);const w=T[s.id][g].map((x,i)=>{const r=rec(s.id,g,i);return r?`${x[0]} (${r.s}/${r.t})`:`${x[0]} (boshlanmagan)`}).join('; ');return `${s.name}: ${w}`}).join('\n');
+oneShot(`O‘quvchining ${g}-sinf natijalari:\n${sum}\nShu natijalarga qarab 7 kunlik qisqa o‘quv reja tuz: har kuni 1–2 vazifa, avval zaif mavzular. Oxirida bitta rag‘batlantiruvchi gap yoz.`,$('#aiout'))}
+if(t.id==='reset')$('#modal').classList.add('on');
+});
+$('#mYes').onclick=()=>{store.p={};save();$('#modal').classList.remove('on');render()};
+$('#mNo').onclick=()=>$('#modal').classList.remove('on');
+$('#home').onclick=()=>{S.q='';$('#ai').classList.remove('show');go('home')};
+$('#resBtn').onclick=()=>go('results');
+$('#aiClose').onclick=()=>$('#ai').classList.remove('show');
+$('#aiForm').onsubmit=e=>{e.preventDefault();chat($('#q').value)};
+$('#q').addEventListener('keydown',e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chat($('#q').value)}});
+$('#q').addEventListener('input',e=>{e.target.style.height='auto';e.target.style.height=Math.min(140,e.target.scrollHeight)+'px'});
+document.addEventListener('input',e=>{if(e.target.id==='srch'){S.q=e.target.value;const pos=e.target.selectionStart;render();const n=$('#srch');n.focus();n.setSelectionRange(pos,pos)}});
+render();
+}
+
+</script>
+</body>
+</html>
